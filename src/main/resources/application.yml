@@ -1,0 +1,16 @@
+server:
+  port: 18200
+  servlet:
+    encoding:
+      charset: UTF-8
+spring:
+  ai:
+    dashscope:
+      api-key: sk-9edeedb6d5fa4eb995248b002138710b
+      base-url: https://dashscope.aliyuncs.com/
+      chat:
+        options:
+          model: qwen3-coder-plus
+          # enable-search: true # 开启联网搜索
+security:
+  authKey: 87654321 # 调用接口密钥
