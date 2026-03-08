@@ -30,8 +30,8 @@ public class SaaLLMConfig {
     @Bean
     public DashScopeApi dashScopeApi(DashScopeConnectionProperties connectionProperties) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(60 * 1000);
-        requestFactory.setReadTimeout(3 * 60 * 1000);
+        requestFactory.setConnectTimeout(10 * 1000);
+        requestFactory.setReadTimeout(30 * 1000);
 
         // 配置 Reactor Netty 的连接池策略
         ConnectionProvider provider = ConnectionProvider
@@ -39,7 +39,7 @@ public class SaaLLMConfig {
                 .maxConnections(500)
                 // 空闲30秒后主动关闭，避免复用已被服务端关闭的连接
                 .maxIdleTime(Duration.ofSeconds(45))
-                .maxLifeTime(Duration.ofMinutes(10))
+                .maxLifeTime(Duration.ofMinutes(1440))
                 .pendingAcquireTimeout(Duration.ofSeconds(60))
                 .evictInBackground(Duration.ofSeconds(30))
                 .build();

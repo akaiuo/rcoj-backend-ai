@@ -33,15 +33,34 @@ public class ExampleController {
         return chatModel.stream(msg);
     }
 
-    @PostMapping("/findCodeError")
-    public Flux<String> findCodeError(@RequestBody FindErrorCodeRequest findErrorCodeRequest, HttpServletRequest request) {
+    @PostMapping(value = "/findCodeError", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> findCodeError(@RequestBody FindErrorCodeRequest findErrorCodeRequest, HttpServletRequest request, HttpServletResponse response) {
         String authHeader = request.getHeader(AUTH_REQUEST_HEAD);
         if (authHeader == null || !authHeader.equals(AUTH_KEY)) {
             return Flux.just("authKey is null or invalid");
         }
-        Flux<String> stringFlux = chatModel.stream("根据错误信息：" + findErrorCodeRequest.getErrMsg() + "\n" + "和代码：" + findErrorCodeRequest.getCode() + "，分析错误原因并给出解决方案。请勿使用markdown语法格式");
-//        stringFlux.doOnNext(System.out::print).subscribe();
-        return stringFlux;
+        Flux<String> stringFlux = chatModel.stream("根据错误信息：" + findErrorCodeRequest.getErrMsg() + "\n" + "和代码：" + findErrorCodeRequest.getCode() + "，分析错误原因并给出解决方案。");
+        System.out.println(111);
+        stringFlux.doOnNext(str -> System.out.print(str) ).subscribe();
+        /**
+         * SSE 必须强制这几个头，少一个就可能被吞：
+         * Content-Type: text/event-stream
+         * Cache-Control: no-cache, no-transform
+         * Connection: keep-alive
+         * Transfer-Encoding: chunked
+         */
+        response.setHeader("Content-Type", "text/event-stream");
+        response.setHeader("Cache-Control", "no-cache, no-transform");
+        response.setHeader("Connection", "keep-alive");
+        response.setHeader("Transfer-Encoding", "chunked");
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
+        // 对换行和空格转义，不然可能会丢
+        return stringFlux.map(data -> {
+            data = data.replace("\n", "#n");
+            data = data.replace(" ", "#sp");
+            return data;
+        });
     }
 
     @GetMapping("/testFlux")
