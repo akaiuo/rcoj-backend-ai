@@ -12,5 +12,8 @@ spring:
         options:
           model: qwen3-coder-plus
           # enable-search: true # 开启联网搜索
+  threads:
+    virtual:
+      enabled: false
 security:
   authKey: 87654321 # 调用接口密钥

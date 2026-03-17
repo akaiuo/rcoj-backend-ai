@@ -2,6 +2,9 @@ package com.whoj.config;
 
 import com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionProperties;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,7 +33,7 @@ public class SaaLLMConfig {
     @Bean
     public DashScopeApi dashScopeApi(DashScopeConnectionProperties connectionProperties) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(10 * 1000);
+        requestFactory.setConnectTimeout(10 * 10);
         requestFactory.setReadTimeout(30 * 1000);
 
         // 配置 Reactor Netty 的连接池策略
@@ -55,5 +58,23 @@ public class SaaLLMConfig {
 //                        .defaultHeader("Connection", "close")
                 )
                 .build();
+    }
+
+    @Bean
+    public WebClient.Builder webClientBuilder() {
+        // 创建自定义的连接提供者，设置最大空闲时间为 30 秒
+        ConnectionProvider connectionProvider = ConnectionProvider.builder("ai-connection-pool")
+                .maxIdleTime(Duration.ofSeconds(30)).maxLifeTime(Duration.ofSeconds(60)) // 核心配置！
+                .build();
+
+        HttpClient httpClient = HttpClient.create(connectionProvider)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10_000) // 连接超时
+                .doOnConnected(conn ->
+                        conn.addHandlerLast(new ReadTimeoutHandler(30))   // 读超时
+                                .addHandlerLast(new WriteTimeoutHandler(30)) // 写超时
+                );
+
+        return WebClient.builder()
+                .clientConnector(new ReactorClientHttpConnector(httpClient));
     }
 }
